@@ -1,6 +1,7 @@
 # http://doc.qt.io/qt-5/qmake-tutorial.html
 
 CONFIG += debug_and_release
+#dynarec
 
 
 QT += core widgets gui multimedia
@@ -18,6 +19,8 @@ macx {
 #
 QMAKE_CFLAGS   += -Werror=switch -fno-common
 QMAKE_CXXFLAGS += -Werror=switch -fno-common
+
+message(Build for $$QMAKE_HOST.arch)
 
 
 HEADERS =	../superio.h \
@@ -47,7 +50,7 @@ HEADERS =	../superio.h \
 
 SOURCES =	../superio.c \
 		../cdrom-iso.c \
-		../cmos.c \
+                ../cmos.c \
 		../cp15.c \
 		../fdc.c \
 		../fpa.c \
@@ -200,15 +203,22 @@ DESTDIR = ../..
 
 CONFIG(dynarec) {
 	SOURCES +=	../ArmDynarec.c
-	HEADERS +=	../ArmDynarecOps.h \
-			../codegen_x86_common.h
+        HEADERS +=	../ArmDynarecOps.h
 
 	contains(QMAKE_HOST.arch, x86_64):!win32: { # win32 always uses 32bit dynarec
-		HEADERS +=	../codegen_amd64.h
+                HEADERS +=	../codegen_amd64.h\
+                                ../codegen_x86_common.h
 		SOURCES +=	../codegen_amd64.c
-	} else {
-		HEADERS +=	../codegen_x86.h
-		SOURCES +=	../codegen_x86.c
+        } contains(QMAKE_HOST.arch, arm64): {
+                HEADERS +=	../codegen_arm64.h
+                SOURCES +=	../codegen_arm64.c
+        } contains(QMAKE_HOST.arch, aarch64): {
+                HEADERS +=	../codegen_arm64.h
+                SOURCES +=	../codegen_arm64.c
+        } contains(QMAKE_HOST.arch, x86) {
+                HEADERS +=	../codegen_x86.h\
+                                ../codegen_x86_common.h
+                SOURCES +=	../codegen_x86.c
 	}
 	
 	win32 {
@@ -247,4 +257,7 @@ macx {
 	QMAKE_INFO_PLIST = ../macosx/Info.plist
 	QMAKE_BUNDLE = rpcemu
 	QMAKE_TARGET_BUNDLE_PREFIX = org.marutan.
+        JIT_ENTITLEMENTS.name = JIT_ENTITLEMENTS
+        JIT_ENTITLEMENTS.value = ../macosx/rpcemu.entitlements
+        QMAKE_MAC_XCODE_SETTINGS += JIT_ENTITLEMENTS
 }

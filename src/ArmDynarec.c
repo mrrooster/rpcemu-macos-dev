@@ -46,6 +46,8 @@ int blockend;
 #	include "codegen_amd64.h"
 #elif defined i386 || defined __i386 || defined __i386__ || defined _X86_
 #	include "codegen_x86.h"
+#elif defined __arm64__ || defined __aarch64__
+#include "codegen_arm64.h"
 #else
 #	error "Fatal error : no recompiler available for this architecture"
 #endif
@@ -808,9 +810,16 @@ arm_exec(void)
 				const uint32_t templ = codeblocknum[hash];
 				void (*gen_func)(void);
 
-				gen_func = (void *) (&rcodeblock[templ][BLOCKSTART]);
-				// gen_func=(void *)(&codeblock[blocks[templ]>>24][blocks[templ]&0xFFF][4]);
-				gen_func();
+#ifdef __APPLE__
+#ifdef __arm64__
+                gen_func = (void *) (rcodeblock+(templ*BLOCK_ALLOC_SIZE)+BLOCKSTART);
+#else
+                gen_func = (void *) (&rcodeblock[templ][BLOCKSTART]);
+#endif				// gen_func=(void *)(&codeblock[blocks[templ]>>24][blocks[templ]&0xFFF][4]);
+#else
+                gen_func = (void *) (&rcodeblock[templ][BLOCKSTART]);
+#endif				// gen_func=(void *)(&codeblock[blocks[templ]>>24][blocks[templ]&0xFFF][4]);
+                gen_func();
 				if (arm.event & 0x40) {
 					arm.reg[15] += 4;
 				}
