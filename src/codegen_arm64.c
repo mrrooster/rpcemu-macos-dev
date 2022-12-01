@@ -24,16 +24,7 @@ static int haverecompiled = 0;
 ///DEBUG
 
 #define isblockvalid(l) (dcache)
-#ifdef __APPLE__
-#ifdef __arm64__
-//#define __REG_FILE__ // Disables saving registers every instruction.
 uint8_t *rcodeblock;
-#else
-uint8_t rcodeblock[BLOCKS][BLOCK_COUNT] __attribute__ ((aligned (4096)));
-#endif
-#else
-uint8_t rcodeblock[BLOCKS][BLOCK_COUNT] __attribute__ ((aligned (4096)));
-#endif
 
 int lastflagchange=0;
 
@@ -43,9 +34,7 @@ int codeblocknum[0x8000];
 static uint8_t codeblockpresent[0x10000];
 static int codeblockpos;
 static int blockpoint, blockpoint2;
-#ifdef __APPLE__
 static int rcodeinit=0;
-#endif
 static uint32_t blocks[BLOCKS];
 static uint32_t *lastpcpsr=0;
 static int blocknum;
@@ -98,12 +87,8 @@ static int recompile(uint32_t opcode, uint32_t *pcpsr);
 static inline void
 addlong(uint32_t a)
 {
-#ifdef __APPLE__
     assert( ((BLOCK_ALLOC_SIZE*blockpoint2)+codeblockpos) < (BLOCK_ALLOC_SIZE * BLOCKS));
     memcpy(rcodeblock+(BLOCK_ALLOC_SIZE*blockpoint2)+codeblockpos,&a,sizeof(uint32_t));
-#else
-    memcpy(&rcodeblock[blockpoint2][codeblockpos], &a, sizeof(uint32_t));
-#endif
 //    printf("[0x%llx] - 0x%llx\n",(void*)rcodeblock+(BLOCK_ALLOC_SIZE*blockpoint2)+codeblockpos,a);
     codeblockpos += 4;
 }
@@ -133,25 +118,22 @@ initcodeblocks(void)
 {
     int c;
 
-#ifdef __APPLE__
     if (rcodeinit==0) {
         // Alloc memory with the correct permissions to allow JIT on M1
+#ifdef __APPLE__
         rcodeblock=mmap(0,BLOCK_ALLOC_SIZE * BLOCKS,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_PRIVATE|MAP_ANON|MAP_JIT,-1,0);
+#else
+        rcodeblock=malloc(BLOCK_ALLOC_SIZE * BLOCKS);
+        set_memory_executable(rcodeblock, BLOCK_ALLOC_SIZE * BLOCKS);
+#endif
         rcodeinit=1;
     }
-#else
-    set_memory_executable(rcodeblock, sizeof(rcodeblock));
-#endif
     // Clear all blocks
     memset(codeblockpc, 0xff, sizeof(codeblockpc));
     memset(blocks, 0xff, sizeof(blocks));
 
     for (c = 0; c < BLOCKS; c++) {
-#ifdef __APPLE__
         codeblockaddr[c] = rcodeblock + (c*BLOCK_ALLOC_SIZE);
-#else
-        codeblockaddr[c] = &rcodeblock[c][0];
-#endif
     }
 }
 
@@ -469,11 +451,7 @@ static int  generate_forward_jump(int condition) {
 static void generate_forward_jump_here(int jump_offset_pos) {
     int rel = codeblockpos - jump_offset_pos;
 
-#ifdef __APPLE__
     uint32_t *addr = (void*)(rcodeblock+(BLOCK_ALLOC_SIZE*blockpoint2)+jump_offset_pos);
-#else
-    uint32_t *addr = (void*)&rcodeblock[blockpoint2][jump_offset_pos];
-#endif
     *addr = (*addr) | (MASK_19(SIGN_CONTRACT((rel/4),19))<<5);
 //printf("Completed jump for offset: %d\n",jump_offset_pos);
 }

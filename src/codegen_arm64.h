@@ -8,7 +8,7 @@
 #define isblockvalid(l) (dcache)
 
 #ifdef __APPLE__
-#define BLOCK_ALLOC_SIZE 4096
+#define BLOCK_ALLOC_SIZE (BLOCK_COUNT)
 extern uint8_t *rcodeblock;
 #else
 extern uint8_t rcodeblock[BLOCKS][BLOCK_COUNT] __attribute__ ((aligned (4096)));
