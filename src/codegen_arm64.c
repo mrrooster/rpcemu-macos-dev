@@ -139,6 +139,8 @@ initcodeblocks(void)
         rcodeblock=mmap(0,BLOCK_ALLOC_SIZE * BLOCKS,PROT_READ|PROT_WRITE|PROT_EXEC,MAP_PRIVATE|MAP_ANON|MAP_JIT,-1,0);
         rcodeinit=1;
     }
+#else
+    set_memory_executable(rcodeblock, sizeof(rcodeblock));
 #endif
     // Clear all blocks
     memset(codeblockpc, 0xff, sizeof(codeblockpc));
