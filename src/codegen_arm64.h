@@ -7,12 +7,8 @@
 #define BLOCK_COUNT 1792
 #define isblockvalid(l) (dcache)
 
-#ifdef __APPLE__
 #define BLOCK_ALLOC_SIZE (BLOCK_COUNT)
 extern uint8_t *rcodeblock;
-#else
-extern uint8_t rcodeblock[BLOCKS][BLOCK_COUNT] __attribute__ ((aligned (4096)));
-#endif
 extern uint32_t codeblockpc[0x8000];
 extern int codeblocknum[0x8000];
 
